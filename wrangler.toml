@@ -1,0 +1,16 @@
+name = "server-monitor-pro"  # 这就是 CF_WORKER_SUBDOMAIN
+main = "src/index.js"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# 静态资源目录
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# D1 数据库绑定（通过名称自动匹配，无需 database_id）
+[[d1_databases]]
+binding = "DB"
+database_name = "server-monitor-db"
+
+[vars]

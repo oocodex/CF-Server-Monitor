@@ -1,0 +1,26 @@
+{
+  "name": "cf-server-monitor-pro",
+  "version": "2.0.0",
+  "description": "Cloudflare Workers Server Monitor Pro - 多服务器监控探针",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "monitor",
+    "server",
+    "probe"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

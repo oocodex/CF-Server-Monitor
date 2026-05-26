@@ -34,6 +34,10 @@ jobs:
           compatibility_date = "2024-12-01"
           compatibility_flags = ["nodejs_compat"]
           
+          # 每日定时任务（UTC 0点，即北京时间 8点）
+          [triggers]
+          crons = ["0 0 * * *"]
+          
           [assets]
           directory = "./public"
           binding = "ASSETS"

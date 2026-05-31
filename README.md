@@ -2,7 +2,7 @@
 
 **版本：V2.0**
 
-一个基于 Cloudflare Workers + D1 的多服务器监控探针系统，支持实时监控、历史数据查看、延迟追踪、地图展示等功能。基于 [CF-Server-Monitor-Pro V1.3](https://github.com/a63414262/CF-Server-Monitor-Pro) 深度二次开发
+一个基于 Cloudflare Workers + D1 的多服务器监控探针系统，支持实时监控、历史数据查看、延迟追踪、地图展示等功能。基于 [CF-Server-Monitor-Pro](https://github.com/a63414262/CF-Server-Monitor-Pro) 深度二次开发
 
 ## 🔄 V2.0 版本升级说明
 

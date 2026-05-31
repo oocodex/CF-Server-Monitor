@@ -39,7 +39,7 @@
       <div class="sysinfo-grid" id="info-panel">
         <div class="sysinfo-item">
           <span class="sysinfo-label">⏱ {{ trans.uptime }}</span>
-          <span class="sysinfo-value">{{ server.uptime || 'N/A' }}</span>
+          <span class="sysinfo-value">{{ formatUptime(server.boot_time) }}</span>
         </div>
         <div class="sysinfo-item">
           <span class="sysinfo-label">🏗 {{ trans.architecture }}</span>
@@ -50,8 +50,8 @@
           <span class="sysinfo-value">{{ server.os || 'N/A' }}</span>
         </div>
         <div class="sysinfo-item">
-          <span class="sysinfo-label">🔧 {{ trans.cpuModel }}</span>
-          <span class="sysinfo-value" style="font-size:11px;">{{ server.cpu_model || 'N/A' }}</span>
+          <span class="sysinfo-label">🔧 {{ trans.cpuInfo }}</span>
+          <span class="sysinfo-value" style="font-size:11px;">{{ server.cpu_info || 'N/A' }}</span>
         </div>
         <div class="sysinfo-item">
           <span class="sysinfo-label">⚙️ {{ trans.cpuCores }}</span>
@@ -63,7 +63,7 @@
         </div>
         <div class="sysinfo-item">
           <span class="sysinfo-label">🕐 {{ trans.bootTime }}</span>
-          <span class="sysinfo-value" style="font-size:11px;">{{ server.boot_time || 'N/A' }}</span>
+          <span class="sysinfo-value" style="font-size:11px;">{{ formatBootTime(server.boot_time) }}</span>
         </div>
         <div class="sysinfo-item">
           <span class="sysinfo-label">💾 {{ trans.totalRam }}</span>
@@ -310,6 +310,60 @@ const parseLoadAvg = (loadAvgStr) => {
   const load5 = parseFloat(parts[1]) || 0
   const load15 = parseFloat(parts[2]) || 0
   return [load1, load5, load15]
+}
+
+const parseBootTimeToMs = (bootTime) => {
+  if (!bootTime) return null
+  
+  if (typeof bootTime === 'string' && !/^\d+$/.test(bootTime)) {
+    const date = new Date(bootTime)
+    if (isNaN(date.getTime())) return null
+    return date.getTime()
+  } else {
+    let timestamp = parseInt(bootTime)
+    if (isNaN(timestamp)) return null
+    if (timestamp < 1000000000000) {
+      timestamp *= 1000
+    }
+    return timestamp
+  }
+}
+
+const formatUptime = (bootTime) => {
+  const bootTimeMs = parseBootTimeToMs(bootTime)
+  if (!bootTimeMs) return 'N/A'
+  
+  const diffMs = Date.now() - bootTimeMs
+  
+  if (diffMs < 0) return 'N/A'
+  
+  const seconds = Math.floor(diffMs / 1000)
+  const days = Math.floor(seconds / 86400)
+  const hours = Math.floor((seconds % 86400) / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  
+  const hoursStr = String(hours).padStart(2, '0')
+  const minutesStr = String(minutes).padStart(2, '0')
+  
+  if (days > 0) {
+    return `${days} day${days > 1 ? 's' : ''}, ${hoursStr}:${minutesStr}`
+  } else {
+    return `${hoursStr}:${minutesStr}`
+  }
+}
+
+const formatBootTime = (bootTime) => {
+  const bootTimeMs = parseBootTimeToMs(bootTime)
+  if (!bootTimeMs) return 'N/A'
+  
+  const date = new Date(bootTimeMs)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 const initCharts = () => {

@@ -248,12 +248,12 @@ while true; do
     fi
     OS=${OS_RAW:-"Linux"}
     ARCH=$(uname -m)
-    BOOT_TIME=$(uptime -s 2>/dev/null || stat -c %y / 2>/dev/null | cut -d'.' -f1 || echo "Unknown")
+    BOOT_TIME=$(($(date -d "$(uptime -s 2>/dev/null)" +%s 2>/dev/null || echo 0) * 1000))
     CPU_INFO=$(grep -m 1 'model name' /proc/cpuinfo 2>/dev/null | awk -F: '{print $2}' | xargs || echo "")
     [ -z "${CPU_INFO}" ] && CPU_INFO=${ARCH}
     CPU_CORES=$(nproc 2>/dev/null || grep -c '^processor' /proc/cpuinfo 2>/dev/null || echo "1")
     LOAD=$(cat /proc/loadavg 2>/dev/null | awk '{print $1, $2, $3}' || echo "0 0 0")
-    UPTIME=$(uptime -p 2>/dev/null | sed 's/up //' || echo "Unknown")
+    UPTIME=$(awk '{printf "%.0f", $1 * 1000}' /proc/uptime 2>/dev/null || echo 0)
     PROCESSES=$(ps -e 2>/dev/null | wc -l || echo 0)
     TCP_CONN=$(ss -ant 2>/dev/null | grep -c -v State || wc -l < /proc/net/tcp 2>/dev/null || echo 0)
     UDP_CONN=$(ss -anu 2>/dev/null | grep -c -v State || wc -l < /proc/net/udp 2>/dev/null || echo 0)

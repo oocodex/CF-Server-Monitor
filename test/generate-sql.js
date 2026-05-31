@@ -74,7 +74,7 @@ const servers = [
     bandwidth: '1Gbps',
     traffic_limit: '2TB',
     report_interval: 60,
-    boot_time: now - 86400000 * 30
+    boot_time: now - 86400000 * 600
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440002',

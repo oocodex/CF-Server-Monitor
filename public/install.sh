@@ -53,7 +53,7 @@ print_usage() {
     echo "  -cu=HOST       自定义CU测试节点"
     echo "  -cm=HOST       自定义CM测试节点"
     echo "  -bd=HOST       自定义BD测试节点"
-    echo "  -reset_day=N   流量重置日(1-31)，默认1"
+    echo "  -reset_day=N   流量重置日(1-31, 0=不重置)，默认1"
     echo "  -rx_correction=N  下行流量校正(GB)，修改当月下行数据"
     echo "  -tx_correction=N  上行流量校正(GB)，修改当月上行数据"
     echo ""
@@ -178,7 +178,7 @@ done < "${CONFIG_FILE}"
 
 REPORT_INTERVAL=${REPORT_INTERVAL:-60}
 PING_TYPE=${PING_TYPE:-http}
-RESET_DAY=${RESET_DAY:-1}
+[ -z "$RESET_DAY" ] && RESET_DAY=1
 
 # 严苛环境下的规范 JSON 字段转义函数
 escape_json() {
@@ -209,6 +209,7 @@ is_leap_year() {
 # 获取当月账单周期起始时间戳（UTC+0）
 get_period_start_ts() {
     local reset_day="$1"
+    [ "$reset_day" -eq 0 ] 2>/dev/null && { echo "0"; return; }
     local now_ts="$2"
     local year month day
     year=$(date -u -d "@${now_ts}" '+%Y' 2>/dev/null || date -u -r "${now_ts}" '+%Y' 2>/dev/null)
@@ -294,7 +295,7 @@ calc_monthly_traffic() {
         fi
         
         # 判断是否进入新账单周期（跨月）
-        if [ "$period_start_ts" -ne "$saved_period_start" ] && [ "$saved_period_start" -ne 0 ]; then
+        if [ "$period_start_ts" -ne 0 ] && [ "$period_start_ts" -ne "$saved_period_start" ] && [ "$saved_period_start" -ne 0 ]; then
             saved_rx_period="$rx_delta"; saved_tx_period="$tx_delta"
         else
             saved_rx_period=$((saved_rx_period + rx_delta))
@@ -770,7 +771,7 @@ install_probe() {
         if [ -n "${SERVER_ID}" ] && [ -n "${SECRET}" ] && [ -n "${WORKER_URL}" ]; then
             REPORT_INTERVAL=${REPORT_INTERVAL:-60}
             PING_TYPE=${PING_TYPE:-http}
-            RESET_DAY=${RESET_DAY:-1}
+            [ -z "$RESET_DAY" ] && RESET_DAY=1
             
             step "更新配置文件..."
             cat > "${CONFIG_FILE}" << EOF
@@ -837,7 +838,7 @@ EOF
 
         REPORT_INTERVAL=${REPORT_INTERVAL:-60}
         PING_TYPE=${PING_TYPE:-http}
-        RESET_DAY=${RESET_DAY:-1}
+        [ -z "$RESET_DAY" ] && RESET_DAY=1
 
         step "创建配置目录..."
         mkdir -p "${CONFIG_DIR}" 2>/dev/null || true
@@ -908,7 +909,11 @@ EOF
     echo -e "    ● 探测类型    : ${PING_TYPE}"
     [ -n "${RX_CORRECTION}" ] && echo -e "    ● 下行校正    : ${RX_CORRECTION}GB"
     [ -n "${TX_CORRECTION}" ] && echo -e "    ● 上行校正    : ${TX_CORRECTION}GB"
-    echo -e "    ● 流量重置日  : ${RESET_DAY}号"
+    if [ "${RESET_DAY}" = "0" ]; then
+        echo -e "    ● 流量重置日  : 不重置"
+    else
+        echo -e "    ● 流量重置日  : ${RESET_DAY}号"
+    fi
     [ -n "${CT_NODE}" ] && echo -e "    ● CT节点      : ${CT_NODE}"
     [ -n "${CU_NODE}" ] && echo -e "    ● CU节点      : ${CU_NODE}"
     [ -n "${CM_NODE}" ] && echo -e "    ● CM节点      : ${CM_NODE}"

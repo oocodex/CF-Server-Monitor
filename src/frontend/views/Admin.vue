@@ -540,6 +540,7 @@
             <div class="form-group flex-1">
               <label class="form-label">{{ trans.trafficResetDay }}</label>
               <select ref="editResetDayRef" name="edit_reset_day" v-model="editForm.reset_day" class="form-select">
+                <option :value="0">0</option>
                 <option v-for="day in 31" :key="day" :value="day">{{ day }}</option>
               </select>
             </div>
@@ -1324,7 +1325,7 @@ const copyCmd = (serverId) => {
   customCu.value = settings.value.custom_cu
   customCm.value = settings.value.custom_cm
   customBd.value = settings.value.custom_bd
-  resetDay.value = server?.reset_day || 1
+  resetDay.value = server?.reset_day ?? 1
   rxCorrection.value = ''
   txCorrection.value = ''
   trafficCalcType.value = server?.traffic_calc_type || 'total'
@@ -1341,7 +1342,7 @@ const getCustomInstallCommand = () => {
   const script = targetOs.value === 'alpine' ? 'install-alpine.sh'
     : targetOs.value === 'openwrt' ? 'install-openwrt.sh'
     : 'install.sh'
-  let cmd = `curl -sL ${HOST}/${script} | ${shell} -s install -id=${copyServerId.value} -secret='${apiSecret.value}' -url=${HOST}/update -interval=${reportInterval.value} -ping=${pingMode.value} -reset_day=${resetDay.value || 1}`
+  let cmd = `curl -sL ${HOST}/${script} | ${shell} -s install -id=${copyServerId.value} -secret='${apiSecret.value}' -url=${HOST}/update -interval=${reportInterval.value} -ping=${pingMode.value} -reset_day=${resetDay.value ?? 1}`
   if (customCt.value) cmd += ` -ct=${customCt.value}`
   if (customCu.value) cmd += ` -cu=${customCu.value}`
   if (customCm.value) cmd += ` -cm=${customCm.value}`
@@ -1404,7 +1405,7 @@ const openEditModal = (server) => {
     bandwidth: server.bandwidth || '',
     traffic_limit: server.traffic_limit || '',
     traffic_calc_type: server.traffic_calc_type || 'total',
-    reset_day: server.reset_day || 1,
+    reset_day: server.reset_day ?? 1,
     report_interval: server.report_interval || 60,
     ping_mode: server.ping_mode || 'http',
     is_hidden: server.is_hidden === '1'

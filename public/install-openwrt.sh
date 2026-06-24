@@ -66,7 +66,7 @@ print_usage() {
     echo "  -cu=HOST       自定义CU测试节点"
     echo "  -cm=HOST       自定义CM测试节点"
     echo "  -bd=HOST       自定义BD测试节点"
-    echo "  -reset_day=N   流量重置日(1-31)，默认1"
+    echo "  -reset_day=N   流量重置日(1-31, 0=不重置)，默认1"
     echo "  -rx_correction=N  下行流量校正(GB)，修改当月下行数据"
     echo "  -tx_correction=N  上行流量校正(GB)，修改当月上行数据"
     echo ""
@@ -382,7 +382,7 @@ done < "${CONFIG_FILE}"
 
 REPORT_INTERVAL=${REPORT_INTERVAL:-60}
 PING_TYPE=${PING_TYPE:-http}
-RESET_DAY=${RESET_DAY:-1}
+[ -z "$RESET_DAY" ] && RESET_DAY=1
 
 SHM_DIR="/tmp"
 
@@ -408,6 +408,7 @@ is_leap_year() {
 
 get_period_start_ts() {
     reset_day="$1"
+    [ "$reset_day" -eq 0 ] 2>/dev/null && { echo "0"; return; }
     now_ts="$2"
 
     # 只用 epoch 秒
@@ -491,7 +492,7 @@ calc_monthly_traffic() {
             tx_delta=$((current_tx - saved_tx_prev))
         fi
 
-        if [ "$period_start_ts" -ne "$saved_period_start" ] && [ "$saved_period_start" -ne 0 ]; then
+        if [ "$period_start_ts" -ne 0 ] && [ "$period_start_ts" -ne "$saved_period_start" ] && [ "$saved_period_start" -ne 0 ]; then
             saved_rx_period="$rx_delta"; saved_tx_period="$tx_delta"
         else
             saved_rx_period=$((saved_rx_period + rx_delta))
@@ -1031,7 +1032,7 @@ install_probe() {
         if [ -n "${SERVER_ID}" ] && [ -n "${SECRET}" ] && [ -n "${WORKER_URL}" ]; then
             REPORT_INTERVAL=${REPORT_INTERVAL:-60}
             PING_TYPE=${PING_TYPE:-http}
-            RESET_DAY=${RESET_DAY:-1}
+            [ -z "$RESET_DAY" ] && RESET_DAY=1
             
             step "更新配置文件..."
             cat > "${CONFIG_FILE}" << EOF
@@ -1078,7 +1079,7 @@ EOF
                 CU_NODE="${OLD_CU_NODE:-}"
                 CM_NODE="${OLD_CM_NODE:-}"
                 BD_NODE="${OLD_BD_NODE:-}"
-                RESET_DAY="${OLD_RESET_DAY:-1}"
+                [ -z "${OLD_RESET_DAY}" ] && RESET_DAY=1 || RESET_DAY="${OLD_RESET_DAY}"
                 info "已从旧版本服务文件恢复参数"
             else
                 print_usage
@@ -1087,7 +1088,7 @@ EOF
 
         REPORT_INTERVAL=${REPORT_INTERVAL:-60}
         PING_TYPE=${PING_TYPE:-http}
-        RESET_DAY=${RESET_DAY:-1}
+        [ -z "$RESET_DAY" ] && RESET_DAY=1
 
         step "创建配置目录..."
         mkdir -p "${CONFIG_DIR}" 2>/dev/null || true
@@ -1158,7 +1159,11 @@ EOF
     printf  '    ● 探测类型    : %s\n' "${PING_TYPE}"
     [ -n "${RX_CORRECTION}" ] && printf  '    ● 下行校正    : %sGB\n' "${RX_CORRECTION}"
     [ -n "${TX_CORRECTION}" ] && printf  '    ● 上行校正    : %sGB\n' "${TX_CORRECTION}"
-    printf  '    ● 流量重置日  : %s号\n' "${RESET_DAY}"
+    if [ "${RESET_DAY}" = "0" ]; then
+        printf  '    ● 流量重置日  : 不重置\n'
+    else
+        printf  '    ● 流量重置日  : %s号\n' "${RESET_DAY}"
+    fi
     [ -n "${CT_NODE}" ] && printf  '    ● CT节点      : %s\n' "${CT_NODE}"
     [ -n "${CU_NODE}" ] && printf  '    ● CU节点      : %s\n' "${CU_NODE}"
     [ -n "${CM_NODE}" ] && printf  '    ● CM节点      : %s\n' "${CM_NODE}"

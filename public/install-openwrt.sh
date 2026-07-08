@@ -83,6 +83,35 @@ sed_escape() {
     printf '%s' "${1:-}" | sed 's/\\/\\\\/g; s/&/\\&/g; s/@/\\@/g; s/\//\\\//g; s/|/\\|/g; s/"/\\"/g'
 }
 
+to_uint() {
+    _cf_num=$(printf '%s' "${1:-0}" | sed 's/^0*//')
+    case "${_cf_num}" in
+        ''|*[!0-9]*) echo 0 ;;
+        ?|??|???|????|?????|??????|???????|????????|?????????) echo "${_cf_num}" ;;
+        *) echo 0 ;;
+    esac
+}
+
+normalize_reset_day() {
+    _cf_day=$(printf '%s' "${1:-1}" | sed 's/^0*//')
+    case "${_cf_day}" in
+        '') echo 0 ;;
+        *[!0-9]*) echo 1 ;;
+        0|[1-9]|1[0-9]|2[0-9]|30|31) echo "${_cf_day}" ;;
+        *) echo 1 ;;
+    esac
+}
+
+normalize_probe_config() {
+    COLLECT_INTERVAL=$(to_uint "${COLLECT_INTERVAL:-0}")
+    REPORT_INTERVAL=$(to_uint "${REPORT_INTERVAL:-60}")
+    [ "${REPORT_INTERVAL}" -lt 1 ] && REPORT_INTERVAL=60
+    if [ "${COLLECT_INTERVAL}" -gt 0 ] && [ "${REPORT_INTERVAL}" -lt "${COLLECT_INTERVAL}" ]; then
+        REPORT_INTERVAL="${COLLECT_INTERVAL}"
+    fi
+    RESET_DAY=$(normalize_reset_day "${RESET_DAY:-1}")
+}
+
 check_root() {
     if [ "$(id -u)" != "0" ]; then
         error "请使用 root 权限运行此脚本: sudo sh $0"
@@ -385,12 +414,29 @@ while IFS='=' read -r key value; do
     esac
 done < "${CONFIG_FILE}"
 
-COLLECT_INTERVAL=${COLLECT_INTERVAL:-0}
-REPORT_INTERVAL=${REPORT_INTERVAL:-60}
+to_uint() {
+    _cf_num=$(printf '%s' "${1:-0}" | sed 's/^0*//')
+    case "${_cf_num}" in
+        ''|*[!0-9]*) echo 0 ;;
+        ?|??|???|????|?????|??????|???????|????????|?????????) echo "${_cf_num}" ;;
+        *) echo 0 ;;
+    esac
+}
+
+normalize_reset_day() {
+    _cf_day=$(printf '%s' "${1:-1}" | sed 's/^0*//')
+    case "${_cf_day}" in
+        '') echo 0 ;;
+        *[!0-9]*) echo 1 ;;
+        0|[1-9]|1[0-9]|2[0-9]|30|31) echo "${_cf_day}" ;;
+        *) echo 1 ;;
+    esac
+}
+
+COLLECT_INTERVAL=$(to_uint "${COLLECT_INTERVAL:-0}")
+REPORT_INTERVAL=$(to_uint "${REPORT_INTERVAL:-60}")
 PING_TYPE=${PING_TYPE:-http}
-[ -z "$RESET_DAY" ] && RESET_DAY=1
-case "$COLLECT_INTERVAL" in ''|*[!0-9]*) COLLECT_INTERVAL=0 ;; esac
-case "$REPORT_INTERVAL" in ''|*[!0-9]*) REPORT_INTERVAL=60 ;; esac
+RESET_DAY=$(normalize_reset_day "${RESET_DAY:-1}")
 [ "$REPORT_INTERVAL" -lt 1 ] && REPORT_INTERVAL=60
 if [ "$COLLECT_INTERVAL" -gt 0 ] && [ "$REPORT_INTERVAL" -lt "$COLLECT_INTERVAL" ]; then
     REPORT_INTERVAL="$COLLECT_INTERVAL"
@@ -421,14 +467,14 @@ is_leap_year() {
 }
 
 get_period_start_ts() {
-    reset_day="$1"
+    reset_day=$(normalize_reset_day "${1:-1}")
     [ "$reset_day" -eq 0 ] 2>/dev/null && { echo "0"; return; }
     now_ts="$2"
 
     # 只用 epoch 秒
     year=$(date +%Y 2>/dev/null || echo 1970)
     month=$(date +%m 2>/dev/null || echo 1)
-    day=$(date +%d 2>/dev/null || echo 1)
+    day=$(to_uint "$(date +%d 2>/dev/null || echo 1)")
 
     # BusyBox fallback（无 date -d 时）
     if [ "${year}" = "1970" ]; then
@@ -1087,6 +1133,7 @@ install_probe() {
             REPORT_INTERVAL=${REPORT_INTERVAL:-60}
             PING_TYPE=${PING_TYPE:-http}
             [ -z "$RESET_DAY" ] && RESET_DAY=1
+            normalize_probe_config
             
             step "更新配置文件..."
             cat > "${CONFIG_FILE}" << EOF
@@ -1146,6 +1193,7 @@ EOF
         REPORT_INTERVAL=${REPORT_INTERVAL:-60}
         PING_TYPE=${PING_TYPE:-http}
         [ -z "$RESET_DAY" ] && RESET_DAY=1
+        normalize_probe_config
 
         step "创建配置目录..."
         mkdir -p "${CONFIG_DIR}" 2>/dev/null || true
@@ -1179,6 +1227,7 @@ EOF
 
     COLLECT_INTERVAL=${COLLECT_INTERVAL:-0}
     REPORT_INTERVAL=${REPORT_INTERVAL:-60}
+    normalize_probe_config
 
     if [ -n "${RX_CORRECTION}" ] || [ -n "${TX_CORRECTION}" ]; then
         step "应用流量校正..."
